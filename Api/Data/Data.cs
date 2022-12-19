@@ -31,9 +31,12 @@ namespace Api.Data
 
             // Construct a new "TableClient" using a "TableSharedKeyCredential" />.
             tableClient = new TableClient(
-                new Uri(appSettings.StorageUri),
+                            //new Uri(appSettings.StorageUri),
+                            //tableName,
+                            //new TableSharedKeyCredential(appSettings.AccountName, appSettings.StorageAccountKey));
+            new Uri(System.Environment.GetEnvironmentVariable("StorageUri")),
                 tableName,
-                new TableSharedKeyCredential(appSettings.AccountName, appSettings.StorageAccountKey));
+                new TableSharedKeyCredential(System.Environment.GetEnvironmentVariable("AccountName"), System.Environment.GetEnvironmentVariable("StorageAccountKey")));
 
             // Create the table in the service.
             tableClient.CreateIfNotExists();
