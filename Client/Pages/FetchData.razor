@@ -1,0 +1,53 @@
+﻿@page "/fetchdata"
+@inject HttpClient Http
+
+<PageTitle>People</PageTitle>
+
+<h1>People</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+@if (people == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="fixed_header">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in people)
+            {
+                <tr>
+                    <td>@p.FirstName</td>
+                    <td>@p.LastName</td>
+                    <td>@p.Email</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private SharedLibrary.Person[]? people;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string json = await Http.GetStringAsync("/api/getpeople");
+            people = await Http.GetFromJsonAsync<SharedLibrary.Person[]>("/api/getpeople");
+        } catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+
+}
