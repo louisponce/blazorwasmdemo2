@@ -1,0 +1,130 @@
+﻿@page "/peoplelist"
+@inject HttpClient Http
+
+<PageTitle>People</PageTitle>
+
+<h1>People</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+<p>CurrRecIndex: @currRecIndex</p>
+
+@if (list == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table fixed_header table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Hobby</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < list.Count; i++)
+            {
+                var index = i;
+                <tr class="@GetTableRowClass(index)" @onclick="@(e => OnLineClick(index))" id="@index">
+                    <td>@list[i].FirstName</td>
+                    <td>@list[i].LastName</td>
+                    <td>@list[i].Email</td>
+                    <td>@list[i].HobbyDescrition</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <br />
+    <h3>Details</h3>
+
+        <EditForm Model="currRec" OnValidSubmit="Save">
+        <div>
+            <label for="name">Name</label>
+            <InputText id="name" @bind-Value="currRec.FirstName" class="form-control"></InputText>
+        </div>
+        <div>
+            <label for="lastName">Last Name</label>
+            <InputText id="lastName" @bind-Value="currRec.LastName" class="form-control"></InputText>
+        </div>
+        <div>
+            <label for="email">E-mail</label>
+            <InputText id="email" @bind-Value="currRec.Email" class="form-control"></InputText>
+        </div>
+        <div>
+            <label for="hobby">Hobby</label>
+            <InputSelect id="hobby" @bind-Value="currRec.HobbyCode" class="form-select">
+                <option value="0" disabled selected hidden>Select</option>
+                @for (int i = 0; i < hobbyList.Length; i++)
+                {
+                    <option value="@hobbyList[i].RowKey">@hobbyList[i].Description</option>
+                }
+            </InputSelect>
+        </div>
+        <br>
+        <button type="button" class="btn btn-primary" @onclick="Save">Save</button>
+        <button type="button" class="btn btn-danger" @onclick="Delete">Delete</button>
+        <button type="button" class="btn btn-info" @onclick="New">New</button>
+    </EditForm>
+}
+@code {
+    private List<SharedLibrary.Person>? list;
+    private SharedLibrary.Hobby[]? hobbyList;
+    private SharedLibrary.Person? currRec;
+    private int currRecIndex = -1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            hobbyList = await Http.GetFromJsonAsync<SharedLibrary.Hobby[]>("/api/hobby");
+            list = await Http.GetFromJsonAsync<List<SharedLibrary.Person>>("/api/people");
+            if (list is not null)
+            {
+                currRecIndex = 0;
+                currRec = list[currRecIndex];
+            }
+        } catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private void OnLineClick(int index)
+    {
+        currRecIndex = index;
+        currRec = list[currRecIndex];
+    }
+
+    private string GetTableRowClass(int index) =>
+        index == currRecIndex ? "table-primary" : "";
+
+
+    private void New()
+    {
+        currRec = new();
+    }
+
+    private async Task Save()
+    {
+        var newEntry = string.IsNullOrWhiteSpace(currRec.RowKey);
+        using var httpResponse = await Http.PostAsJsonAsync<SharedLibrary.Person>("api/people", currRec);
+        currRec = await httpResponse.Content.ReadFromJsonAsync<SharedLibrary.Person>();
+        if (newEntry)
+        {
+            list.Add(currRec);
+            currRecIndex = list.Count - 1;
+        }
+        list[currRecIndex] = currRec;
+
+    }
+
+    private async Task Delete()
+    {
+        await Http.DeleteAsync($"api/people/{currRec.PartitionKey}/{currRec.RowKey}");
+        list.RemoveAt(currRecIndex);
+        currRecIndex--;
+        currRec = list[currRecIndex];
+    }
+}

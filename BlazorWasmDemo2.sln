@@ -10,7 +10,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Api", "Api\Api.csproj", "{478CF087-3576-48B3-956F-D1A7BBDC8601}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Shared\Shared.csproj", "{0688B28E-2075-48F3-8B4C-6E488F803384}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedLibrary", "Shared\SharedLibrary.csproj", "{0688B28E-2075-48F3-8B4C-6E488F803384}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

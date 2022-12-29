@@ -4,6 +4,12 @@ using Api.Data;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.WindowsAzure.Storage;
+using System.Xml;
+using Azure.Data.Tables;
+using System.Threading;
+using SharedLibrary;
+using SharedLibrary.SystemData;
 
 [assembly: FunctionsStartup(typeof(Startup))]
 namespace Api
@@ -13,13 +19,15 @@ namespace Api
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.Services.AddOptions<AppSettings>()
-            .Configure<IConfiguration>((settings, configuration) =>
-            {
-                configuration.GetSection("AppSettings").Bind(settings);
-            });
+            // Use the Environment variables instead
+            //builder.Services.AddOptions<AppSettings>()
+            //.Configure<IConfiguration>((settings, configuration) =>
+            //{
+            //    configuration.GetSection("AppSettings").Bind(settings);
+            //});
 
-            builder.Services.AddSingleton<IData, Api.Data.Data>();
+            //
+            //builder.Services.AddSingleton<IBaseInterface<Person>>(x => { return new PeopleService<Person>(Environment.GetEnvironmentVariable("ConnectionString")); });
             builder.Services.AddLogging();
         }
     }
