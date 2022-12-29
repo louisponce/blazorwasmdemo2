@@ -2,7 +2,7 @@
   "routes": [
     {
       "route": "/peoplelist*",
-      "allowedRoles": [ "anonymous" ]
+      "allowedRoles": [ "authenticated" ]
     }
   ],
   "responseOverrides": {
