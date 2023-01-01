@@ -10,7 +10,8 @@
     <input id="serach" @oninput="OnFilterCriteriaChange" />
 </p>
 <p>Filter: @filterCriteria</p>
-<p>CurrRecIndex: @currRecIndex</p>
+<p>userId: @clientprincipal.UserId</p>
+@*<p>CurrRecIndex: @currRecIndex</p>*@
 
 @if (list == null)
 {
@@ -73,6 +74,7 @@ else
     </EditForm>
 }
 @code {
+    private SharedLibrary.SystemData.ClientPrincipal clientprincipal;
     private List<SharedLibrary.Person>? rawList = new();
     private List<SharedLibrary.Person>? list;
     private SharedLibrary.Hobby[]? hobbyList;
@@ -80,13 +82,15 @@ else
     private int currRecIndex = -1;
     private string filterCriteria = string.Empty;
     private string filterCriteria2 = string.Empty;
+    private string userId = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            clientprincipal = await Http.GetFromJsonAsync<SharedLibrary.SystemData.ClientPrincipal>("/api/clientprincipal");
+
             hobbyList = await Http.GetFromJsonAsync<SharedLibrary.Hobby[]>("/api/hobby");
-            //list = await Http.GetFromJsonAsync<List<SharedLibrary.Person>>("/api/people");
             var body = string.Empty;
             using (var response = await Http.GetAsync("/api/people"))
             {
@@ -118,7 +122,7 @@ else
     [Parameter]
     public EventCallback<string> PasswordChanged { get; set; }
 
-    private async Task OnFilterCriteriaChange(ChangeEventArgs e)
+    private void OnFilterCriteriaChange(ChangeEventArgs e)
     {
         filterCriteria = e?.Value?.ToString();
         try

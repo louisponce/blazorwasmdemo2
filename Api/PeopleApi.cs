@@ -10,8 +10,8 @@ using System.Text.Json;
 using SharedLibrary;
 using SharedLibrary.SystemData;
 using System.IO;
-using System.Collections.Generic;
-using Microsoft.Extensions.Options;
+using System.Linq;
+using System.Text;
 
 namespace Api
 {
@@ -19,7 +19,7 @@ namespace Api
     {
         private static PeopleService peopleService;
 
-        public PeopleApi() //(IBaseInterface<Person> peopleService)
+        public PeopleApi()
         {
             peopleService ??= new(Environment.GetEnvironmentVariable("ConnectionString"));
         }
@@ -58,6 +58,31 @@ namespace Api
         {
             await peopleService.DeleteAsync(rowkey, partitionkey);
             return new OkResult();
+        }
+
+        [FunctionName("ClientPrincipal-Get")]
+        public IActionResult ClientPrincipalGet(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "clientprincipal")] HttpRequest req,
+            ILogger log)
+        {
+            var principal = new ClientPrincipal();
+
+            if (req.Headers.TryGetValue("x-ms-client-principal", out var header))
+            {
+                var data = header[0];
+                var decoded = Convert.FromBase64String(data);
+                var json = Encoding.UTF8.GetString(decoded);
+                principal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
+            principal.UserRoles = principal.UserRoles?.Except(new string[] { "anonymous" }, StringComparer.CurrentCultureIgnoreCase);
+
+            //if (!principal.UserRoles?.Any() ?? true)
+            //{
+            //    return new OkObjectResult(new ClaimsPrincipal());
+            //}
+
+            return new OkObjectResult(principal);
         }
     }
 }
