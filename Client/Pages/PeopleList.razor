@@ -5,7 +5,11 @@
 
 <h1>People</h1>
 
-<p>This component demonstrates fetching data from the server.</p>
+<p>
+    <label for="search">Name</label>
+    <input id="serach" @oninput="OnFilterCriteriaChange" />
+</p>
+<p>Filter: @filterCriteria</p>
 <p>CurrRecIndex: @currRecIndex</p>
 
 @if (list == null)
@@ -69,17 +73,28 @@ else
     </EditForm>
 }
 @code {
+    private List<SharedLibrary.Person>? rawList = new();
     private List<SharedLibrary.Person>? list;
     private SharedLibrary.Hobby[]? hobbyList;
     private SharedLibrary.Person? currRec;
     private int currRecIndex = -1;
+    private string filterCriteria = string.Empty;
+    private string filterCriteria2 = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             hobbyList = await Http.GetFromJsonAsync<SharedLibrary.Hobby[]>("/api/hobby");
-            list = await Http.GetFromJsonAsync<List<SharedLibrary.Person>>("/api/people");
+            //list = await Http.GetFromJsonAsync<List<SharedLibrary.Person>>("/api/people");
+            var body = string.Empty;
+            using (var response = await Http.GetAsync("/api/people"))
+            {
+                body = response.Content.ReadAsStringAsync().Result;
+            }
+            rawList = System.Text.Json.JsonSerializer.Deserialize<List<SharedLibrary.Person>>(body);
+            list = System.Text.Json.JsonSerializer.Deserialize<List<SharedLibrary.Person>>(body);
+
             if (list is not null)
             {
                 currRecIndex = 0;
@@ -91,14 +106,33 @@ else
         }
     }
 
+    private string GetTableRowClass(int index) =>
+        index == currRecIndex ? "table-primary" : "";
+
     private void OnLineClick(int index)
     {
         currRecIndex = index;
         currRec = list[currRecIndex];
     }
 
-    private string GetTableRowClass(int index) =>
-        index == currRecIndex ? "table-primary" : "";
+    [Parameter]
+    public EventCallback<string> PasswordChanged { get; set; }
+
+    private async Task OnFilterCriteriaChange(ChangeEventArgs e)
+    {
+        filterCriteria = e?.Value?.ToString();
+        try
+        {
+            list = rawList.Where(x =>
+                x.Email?.Contains(filterCriteria) ?? false ||
+                (x.FirstName.Contains(filterCriteria)) ||
+                (x.LastName.Contains(filterCriteria))).ToList();
+        }
+        catch (Exception ex)
+        {
+            filterCriteria = ex.Message;
+        }
+    }
 
 
     private void New()
