@@ -25,12 +25,22 @@ namespace Api
         }
 
 
+        //[FunctionName("Person-Get")]
+        //public async Task<IActionResult> Get(
+        //    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "people")] HttpRequest req,
+        //    ILogger log)
+        //{
+        //    var entries = await peopleService.GetEntries(string.Empty);
+        //    var json = JsonSerializer.Serialize(entries);
+        //    return new OkObjectResult(json);
+        //}
+
         [FunctionName("Person-Get")]
         public async Task<IActionResult> Get(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "people")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "people/{rowkey?}")] HttpRequest req, string rowkey,
             ILogger log)
         {
-            var entries = await peopleService.GetEntries();
+            var entries = await peopleService.GetEntries(rowkey);
             var json = JsonSerializer.Serialize(entries);
             return new OkObjectResult(json);
         }

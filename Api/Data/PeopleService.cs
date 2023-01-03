@@ -25,17 +25,29 @@ namespace Api.Data
         //
         //
 
-        public async Task<List<Person>> GetEntries()
+        public async Task<List<Person>> GetEntries(string rowkey)
         {
             // Get hobbies
             await LoadHobbyList();
 
             List<Person> personList = new();
-            var data = await personTableService.QueryAllAsync();
-            await foreach (var item in data)
+            if (string.IsNullOrEmpty(rowkey))
             {
-                item.HobbyDescrition = GetHobbyDescription(item);
-                personList.Add(item);
+                var data = await personTableService.QueryAllAsync();
+                await foreach (var item in data)
+                {
+                    item.HobbyDescrition = GetHobbyDescription(item);
+                    personList.Add(item);
+                }
+            }
+            else
+            {
+                var item = await personTableService.GetAsync(string.Empty, rowkey);
+                if (item is not null)
+                {
+                    item.HobbyDescrition = GetHobbyDescription(item);
+                    personList.Add(item);
+                }
             }
 
             return personList;

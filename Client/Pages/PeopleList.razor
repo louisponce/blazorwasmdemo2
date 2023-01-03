@@ -3,16 +3,28 @@
 
 <PageTitle>People</PageTitle>
 
-<h1>People</h1>
-
-<p>
-    <label for="search">Name</label>
-    <input id="serach" @oninput="OnFilterCriteriaChange" />
-</p>
-<p>Filter: @filterCriteria</p>
-<p>userId: @clientprincipal.UserId</p>
-@*<p>CurrRecIndex: @currRecIndex</p>*@
-
+<div class="container border p-1 rounded">
+    <div class="row">
+        <div class="col">
+            <h2>People</h2>
+        </div>
+        <div class="col text-end">
+            <label for="search">Filter</label>
+            <input id="serach" @oninput="OnFilterCriteriaChange" />
+        </div>
+@*        <div class="col">
+            userId: @clientprincipal.UserId
+        </div>*@
+    </div>
+</div>
+<div class="container border p-1 rounded">
+    <div class="row">
+        <div class="col">
+            <button type="button" class="btn btn-info" @onclick="New">New</button>
+        </div>
+    </div>
+</div>
+<br/>
 @if (list == null)
 {
     <p><em>Loading...</em></p>
@@ -41,43 +53,26 @@ else
             }
         </tbody>
     </table>
-    <br />
-    <h3>Details</h3>
 
-        <EditForm Model="currRec" OnValidSubmit="Save">
-        <div>
-            <label for="name">Name</label>
-            <InputText id="name" @bind-Value="currRec.FirstName" class="form-control"></InputText>
-        </div>
-        <div>
-            <label for="lastName">Last Name</label>
-            <InputText id="lastName" @bind-Value="currRec.LastName" class="form-control"></InputText>
-        </div>
-        <div>
-            <label for="email">E-mail</label>
-            <InputText id="email" @bind-Value="currRec.Email" class="form-control"></InputText>
-        </div>
-        <div>
-            <label for="hobby">Hobby</label>
-            <InputSelect id="hobby" @bind-Value="currRec.HobbyCode" class="form-select">
-                <option value="0" disabled selected hidden>Select</option>
-                @for (int i = 0; i < hobbyList.Length; i++)
-                {
-                    <option value="@hobbyList[i].RowKey">@hobbyList[i].Description</option>
-                }
-            </InputSelect>
-        </div>
-        <br>
-        <button type="button" class="btn btn-primary" @onclick="Save">Save</button>
-        <button type="button" class="btn btn-danger" @onclick="Delete">Delete</button>
-        <button type="button" class="btn btn-info" @onclick="New">New</button>
-    </EditForm>
+    @if (cardOpen)
+    {
+        <CardPage Caption="Person"
+            CurrRec="@currRec"
+            Hobbies="@hobbyList"
+            OnCancel="@OnCancel"
+            OnSave="@OnSave"
+          OnDelete="@OnDelete" />
+    }
 }
+
+
+
 @code {
-    private SharedLibrary.SystemData.ClientPrincipal clientprincipal;
+    private bool cardOpen = false;
+    private SharedLibrary.SystemData.ClientPrincipal? clientprincipal = new();
     private List<SharedLibrary.Person>? rawList = new();
     private List<SharedLibrary.Person>? list;
-    private SharedLibrary.Hobby[]? hobbyList;
+    private List<SharedLibrary.Hobby>? hobbyList = new ();
     private SharedLibrary.Person? currRec;
     private int currRecIndex = -1;
     private string filterCriteria = string.Empty;
@@ -86,27 +81,22 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            clientprincipal = await Http.GetFromJsonAsync<SharedLibrary.SystemData.ClientPrincipal>("/api/clientprincipal");
+        var clientPrincipalTask = Http.GetFromJsonAsync<SharedLibrary.SystemData.ClientPrincipal>("/api/clientprincipal");
+        var personResponseTask = Http.GetAsync("/api/people");
+        var hobbyListTask = Http.GetFromJsonAsync<List<SharedLibrary.Hobby>>("/api/hobby");
+        await Task.WhenAll(clientPrincipalTask, hobbyListTask, personResponseTask);
 
-            hobbyList = await Http.GetFromJsonAsync<SharedLibrary.Hobby[]>("/api/hobby");
-            var body = string.Empty;
-            using (var response = await Http.GetAsync("/api/people"))
-            {
-                body = response.Content.ReadAsStringAsync().Result;
-            }
-            rawList = System.Text.Json.JsonSerializer.Deserialize<List<SharedLibrary.Person>>(body);
-            list = System.Text.Json.JsonSerializer.Deserialize<List<SharedLibrary.Person>>(body);
+        clientprincipal = clientPrincipalTask.Result;
+        hobbyList = hobbyListTask.Result;
+        var response = personResponseTask.Result;
+        var body = response.Content.ReadAsStringAsync().Result;
+        rawList = System.Text.Json.JsonSerializer.Deserialize<List<SharedLibrary.Person>>(body);
+        list = System.Text.Json.JsonSerializer.Deserialize<List<SharedLibrary.Person>>(body);
 
-            if (list is not null)
-            {
-                currRecIndex = 0;
-                currRec = list[currRecIndex];
-            }
-        } catch (Exception ex)
+        if (list is not null)
         {
-            Console.WriteLine(ex.Message);
+            currRecIndex = 0;
+            currRec = list[currRecIndex];
         }
     }
 
@@ -117,20 +107,45 @@ else
     {
         currRecIndex = index;
         currRec = list[currRecIndex];
+
+        OpenCard();
     }
 
-    [Parameter]
-    public EventCallback<string> PasswordChanged { get; set; }
+    private void OpenCard()
+    {
+        cardOpen = true;
+    }
+
+    private void OnCancel(bool action)
+    {
+        cardOpen = false;
+    }
+
+    private async Task OnSave(SharedLibrary.Person rec)
+    {
+        currRec = rec;
+        await Save();
+        cardOpen = false;
+    }
+
+    private async Task OnDelete(SharedLibrary.Person rec)
+    {
+        currRec = rec;
+        await Delete();
+        cardOpen = false;
+    }
+
 
     private void OnFilterCriteriaChange(ChangeEventArgs e)
     {
+
         filterCriteria = e?.Value?.ToString();
         try
         {
             list = rawList.Where(x =>
-                x.Email?.Contains(filterCriteria) ?? false ||
-                (x.FirstName.Contains(filterCriteria)) ||
-                (x.LastName.Contains(filterCriteria))).ToList();
+                (x.Email.Contains(filterCriteria, StringComparison.OrdinalIgnoreCase)) ||
+                (x.LastName.Contains(filterCriteria, StringComparison.OrdinalIgnoreCase)) ||
+                (x.FirstName.Contains(filterCriteria, StringComparison.OrdinalIgnoreCase))).ToList();
         }
         catch (Exception ex)
         {
@@ -142,6 +157,7 @@ else
     private void New()
     {
         currRec = new();
+        OpenCard();
     }
 
     private async Task Save()
@@ -151,6 +167,7 @@ else
         currRec = await httpResponse.Content.ReadFromJsonAsync<SharedLibrary.Person>();
         if (newEntry)
         {
+            rawList.Add(currRec);
             list.Add(currRec);
             currRecIndex = list.Count - 1;
         }
@@ -160,6 +177,7 @@ else
 
     private async Task Delete()
     {
+        // TODO: Dont use the partionkey here. Also, change the api endpoint
         await Http.DeleteAsync($"api/people/{currRec.PartitionKey}/{currRec.RowKey}");
         list.RemoveAt(currRecIndex);
         currRecIndex--;

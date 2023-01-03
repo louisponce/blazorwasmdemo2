@@ -85,6 +85,9 @@ namespace Api.Data
         public async Task<TEntity> GetAsync(string partitionKey, string rowKey)
         {
             await InitializeTableClient();
+            if (string.IsNullOrEmpty(partitionKey))
+                partitionKey = mainPartionKey;
+
             var queryResultsFilter = await tableClient.GetEntityAsync<TEntity>(
                 rowKey: rowKey,
                 partitionKey: partitionKey
